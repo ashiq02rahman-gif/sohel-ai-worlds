@@ -1,5 +1,5 @@
 // আপনার আসল Gemini API Key এখানে বসাবেন (যেমন: AIzaSy...)
-const API_KEY = "YOUR_GEMINI_API_KEY_HERE";
+const API_KEY = "AQ.Ab8RN6J8tfrW9ivlErNqmMO8jkulyzfkiNBNx6fF2LCuw0B2ig";
 
 // Elements
 const chatBox = document.getElementById("chatBox");
