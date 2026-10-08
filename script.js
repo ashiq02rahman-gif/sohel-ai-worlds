@@ -1,4 +1,5 @@
-const API_KEY = "AIzaSyBdSeNA75355wGffxrAIH8KqXSqkrZ1zgo";
+// আপনার আসল Gemini API Key এখানে বসাবেন (যেমন: AIzaSy...)
+const API_KEY = "YOUR_GEMINI_API_KEY_HERE";
 
 // Elements
 const chatBox = document.getElementById("chatBox");
@@ -90,7 +91,7 @@ fileUpload.addEventListener("change", (e) => {
 
 function renderPreviews() {
     attachmentPreview.innerHTML = "";
-    attachedFiles.forEach((file, index) => {
+    attachedFiles.forEach((file) => {
         const thumb = document.createElement("img");
         thumb.src = file.data;
         thumb.className = "preview-thumb";
@@ -98,22 +99,29 @@ function renderPreviews() {
     });
 }
 
-// Authentication & Validation Check
+// Strict Email Validation (Blocks Temp Mail & Numbers Only)
 function isValidRealEmail(email) {
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(email)) return false;
-    
-    // Block numbers only or temp mail domains
-    const tempDomains = ["tempmail.com", "throwawaymail.com", "10minutemail.com", "fakemail.com", "mailinator.com"];
-    const domain = email.split("@")[1];
-    if (tempDomains.includes(domain)) return false;
-    
+
+    const blockedDomains = [
+        "tempmail.com", "throwawaymail.com", "10minutemail.com", "fakemail.com", 
+        "mailinator.com", "yopmail.com", "guerrillamail.com", "sharklasers.com", 
+        "getnada.com", "dispostable.com", "trashmail.com", "temp-mail.org",
+        "maildrop.cc", "mintemail.com", "tempmailaddress.com"
+    ];
+
+    const domain = email.split("@")[1].toLowerCase();
+    if (blockedDomains.includes(domain)) return false;
+
+    const localPart = email.split("@")[0];
+    if (/^\d+$/.test(localPart)) return false;
+
     return true;
 }
 
 authTriggerBtn.addEventListener("click", () => {
     if (currentUser) {
-        // Sign Out
         localStorage.removeItem("sohel_ai_user");
         currentUser = null;
         userEmailDisplay.textContent = "Guest User";
@@ -205,12 +213,11 @@ function appendMessageUI(text, className) {
     chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// Send Message & Gemini API Integration
+// Send Message & Gemini API Integration (sohelbhai thinking...)
 async function handleSendMessage() {
     const text = userInput.value.trim();
     if (text === "" && attachedFiles.length === 0) return;
 
-    // Check Guest Restrictions (Allows 2-3 free messages before forcing sign-in)
     if (!currentUser) {
         guestMessageCount++;
         localStorage.setItem("sohel_guest_count", guestMessageCount);
@@ -230,12 +237,12 @@ async function handleSendMessage() {
 
     appendMessageUI(text, "user-message");
 
-    // Thinking Indicator
+    // sohelbhai thinking... Indicator
     const thinkingId = "think_" + Date.now();
     const thinkingDiv = document.createElement("div");
     thinkingDiv.className = "message bot-message";
     thinkingDiv.id = thinkingId;
-    thinkingDiv.textContent = "Sohel AI Worlds is thinking...";
+    thinkingDiv.textContent = "sohelbhai thinking...";
     chatBox.appendChild(thinkingDiv);
     chatBox.scrollTop = chatBox.scrollHeight;
 
@@ -252,13 +259,20 @@ async function handleSendMessage() {
             });
         }
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`, {
+        const apiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+
+        const response = await fetch(apiUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ contents: contentsPayload })
         });
 
         const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(data.error.message || "API Error");
+        }
+
         const aiReply = data.candidates[0].content.parts[0].text;
 
         document.getElementById(thinkingId).remove();
@@ -267,8 +281,9 @@ async function handleSendMessage() {
         saveChatToCache(text, aiReply);
 
     } catch (error) {
+        console.error("API Error:", error);
         document.getElementById(thinkingId).remove();
-        appendMessageUI("Sorry, an error occurred while processing your request.", "bot-message");
+        appendMessageUI("দুঃখিত, এপিআই কানেক্ট করতে সমস্যা হচ্ছে। আপনার সঠিক Gemini API Key বসানো আছে কি না চেক করুন।", "bot-message");
     }
 }
 
